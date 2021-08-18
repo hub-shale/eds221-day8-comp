@@ -1,0 +1,114 @@
+---
+title: "221 data visualization"
+author: "Shale"
+date: "8/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(janitor)
+library(lubridate)
+
+# data viz packages
+library(patchwork)
+library(ggrepel)
+library(gghighlight)
+library(ggExtra)
+library(paletteer)
+library(ggbeeswarm)
+library(gapminder)
+
+library(sf)
+```
+
+## 
+
+```{r}
+lizards = read_csv(here("data_tidy", "lizards.csv"))
+```
+
+```{r}
+# histogram of lizard weights
+ggplot() +
+  geom_histogram(data = lizards, aes(x = weight),
+                 fill = "pink")
+# for overlapping plots you can specify data/aes stuff in the geom_ rather than in the ggplot()header so they each have their own variables etc.
+```
+
+```{r}
+ggplot(data = lizards, aes(x = total_length, y = weight)) +
+  geom_point(shape = 22,
+             size = 2,
+             alpha = .8,
+             aes(color = spp),
+             show.legend = FALSE)
+```
+```{r}
+# bubble plot
+ggplot(data = lizards, aes(x = total_length, y= weight)) +
+  geom_point(aes(size = total_length,
+                 color = common_name),
+             shape = 14) +
+  theme_linedraw()
+```
+```{r}
+ggplot(data = lizards, aes(x = total_length, y= weight)) +
+  geom_point(aes(color = spp)) +
+  theme_linedraw() +
+  facet_wrap(~common_name) 
+  
+```
+```{r}
+ggplot(data = lizards, aes(x = total_length, y= weight)) +
+  geom_point(aes(color = spp)) +
+  theme_light() +
+  facet_grid(sex ~ tail) 
+```
+
+```{r}
+liz_count = lizards %>% 
+  group_by(scientific_name) %>% 
+  summarise(count = n())
+
+count_liz = lizards %>% count(common_name)
+```
+
+```{r}
+ggplot(data = liz_count, aes(x= count, y= fct_reorder(scientific_name, count))) +
+  geom_col(fill = "tomato") +
+  theme_grey() +
+  labs(x = "Number of Individuals", y = "Species")
+```
+
+```{r}
+# same thing as above, but done outside of ggplot
+lizzy = count_liz %>% 
+  mutate(common_name = fct_reorder(common_name, n))
+# reorders common_name as a factor in the order of n (low to high)
+```
+
+```{r}
+ggplot(data = lizards, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = spp),
+             show.legend = FALSE,
+             alpha = .6) +
+  theme_classic() +
+  scale_x_continuous(breaks = seq(from = 0, to = 500, by = 50), limits = c(0, 450))
+```
+```{r}
+lizzo = lizards %>% 
+  mutate(date = mdy(date)) %>% 
+  count(date)
+```
+
+```{r}
+ggplot(data = lizzo, aes(x= date, y= n)) +
+  geom_line() +
+  labs(y= "Lizards Observed") +
+  scale_x_date(date_breaks = "2 years",
+               date_labels = "%y")
+```
+
