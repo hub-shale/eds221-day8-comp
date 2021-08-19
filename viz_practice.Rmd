@@ -112,3 +112,126 @@ ggplot(data = lizzo, aes(x= date, y= n)) +
                date_labels = "%y")
 ```
 
+```{r}
+ggplot(data = lizards, aes(x= total_length, y= weight)) +
+  geom_point(aes(color=weight)) +
+#  scale_color_gradient(low = "red", high = "navy")
+#  scale_color_gradientn(colors = c("red", "yellow", "green", "blue", "black"))
+  scale_color_stepsn(colors = c("red", "yellow", "green", "blue", "black"),
+                     breaks = c(0, 5, 10, 20, 39))
+```
+
+
+```{r}
+fct_liz = lizards %>% 
+  mutate(common_name = fct_reorder(common_name, .x = total_length, .fun = median))
+# color schemes in paletteer
+ggplot(data = fct_liz, aes(x = total_length, y = common_name)) +
+  geom_boxplot(aes(fill = common_name),
+               show.legend = FALSE) +
+  scale_fill_paletteer_d(palette = "palettetown::jynx")
+```
+```{r}
+ggplot(data = lizards, aes(x= total_length, y= weight)) +
+  geom_point() +
+  theme(panel.background = element_rect(fill = "yellow",
+                                        color = "purple",
+                                        size = 5),
+        panel.grid.major = element_line(color = "darkturquoise"),
+        panel.grid.minor = element_blank(),
+        # panel.grid = element_blank() will hide all grids
+        plot.background = element_rect("sienna2"),
+        axis.text = element_text(color = "white", size = 11),
+        axis.title = element_text(color = "darkolivegreen4", size = 13)
+        )
+```
+
+## THURSDAY: plots ctd
+
+```{r}
+# ggrepel for labels
+
+ww_lizards = lizards %>% 
+  filter(spp == "cnti", site == "sand")
+
+ggplot(data = ww_lizards, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = toe_num)) +
+  geom_text_repel(aes(label = toe_num))
+```
+
+```{r}
+gap_subset = gapminder %>% 
+  filter(continent == "Europe") %>% 
+  filter(year %in% c(1952, 1990, 2007))
+
+ggplot(data = gap_subset, aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(aes(color = country)) +
+  geom_text_repel(aes(label  = country))
+```
+
+```{r}
+# gghighlight
+b_liz = ggplot(data = lizards, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = spp))
+
+b_liz + gghighlight(weight == 61, label_key = spp)
+b_liz + gghighlight(spp == "phco")
+
+c_liz = ggplot(data = lizards, aes(y = common_name, x = weight)) +
+  geom_col()
+
+(b_liz / c_liz) & theme_linedraw()
+```
+
+Marginal plots : `ggExtra::ggMarginal()`
+```{r}
+ww_liz = lizards %>% 
+  filter(spp == "cnti") %>% 
+  drop_na(total_length, weight)
+
+base_plot = ggplot(data = ww_liz, aes(x = total_length, y = weight)) +
+  geom_point(aes(color = sex)) +
+  scale_color_manual(values = c("red", "black", "blue"),
+                     name = "Sex:", 
+                     labels = c("female", "juvenile", "male")) +
+  theme(legend.position = "bottom") +
+  labs(title = "Western Whiptail Lizards")
+
+ggMarginal(base_plot, type = "boxplot", groupColour = TRUE)
+```
+
+```{r}
+ggplot(data = ww_liz, aes(x = sex, y = weight)) +
+  geom_beeswarm() +
+  geom_violin(alpha  = 0.4, color = "green") +
+  geom_boxplot(fill = NA, color = "red")
+```
+
+```{r}
+liz_counts = lizards %>% 
+  mutate(date = mdy(date)) %>% 
+  mutate(year = year(date)) %>% 
+  group_by(year, common_name) %>% 
+  summarise(count = n())
+
+# geom_tile() is for heat maps
+ggplot(data = liz_counts, aes(x = year, y = common_name)) +
+geom_tile(aes(fill = count)) +
+  scale_fill_binned(breaks = c(0, 10, 25, 50, 80, 150, 500), type = "viridis") +
+  geom_text(aes(label = count), color = "white", size = 2)
+```
+
+
+## Maps!
+```{r}
+veg_data = read_sf(here("data_raw", "spatial_vegetation", "doc.kml"))
+```
+
+```{r}
+ggplot(veg_data) +
+  geom_sf(aes(fill = Name), color = NA) +
+  scale_fill_paletteer_d(palette = "ggthemes::manyeys") +
+  labs(x = "Longitude", y = "Latitude", fill = "Dominant Vegetation") +
+  theme_void()
+```
+

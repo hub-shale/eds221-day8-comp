@@ -1,0 +1,71 @@
+---
+title: "SF_GG"
+author: "Shale"
+date: "8/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(janitor)
+library(lubridate)
+
+# data viz packages
+library(patchwork)
+library(ggrepel)
+library(gghighlight)
+library(ggExtra)
+library(paletteer)
+library(ggbeeswarm)
+library(gapminder)
+
+library(sf)
+```
+
+## Wrangling
+
+```{r}
+sf_gg = read_csv(here("data_raw", "SF_G_Inventory.csv"))
+```
+
+```{r}
+sec_gg = sf_gg %>% 
+  drop_na(Emissions_mtCO2e) %>% 
+  group_by(Sector_General) %>% 
+  summarise(tot_emissions = sum(Emissions_mtCO2e))
+
+an_type_gg = sf_gg %>% 
+  drop_na(Emissions_mtCO2e) %>% 
+  group_by(Calendar_Year, Commodity_Type) %>% 
+  summarise(ann_emissions = sum(Emissions_mtCO2e)) %>% 
+  mutate(top_emitter = ann_emissions > 100000) %>% 
+  filter(top_emitter == TRUE) %>% 
+  mutate(ann_emissions_kt = ann_emissions / 1000) %>% 
+  mutate(Commodity_Type = fct_reorder(Commodity_Type, .x = ann_emissions_kt, .fun = min))
+
+modern_gg = sf_gg %>% 
+  filter(Calendar_Year >= 2005) %>% 
+  filter(str_detect(Sector_Detail2, "PG&E")) %>% 
+  select(Calendar_Year, Sector_Detail2, Emissions_mtCO2e)
+```
+
+```{r}
+ggplot(data = an_type_gg, aes(x = Calendar_Year, y = ann_emissions_kt, color = Commodity_Type)) +
+  geom_line(show.legend = FALSE, size = 1.5) +
+  # geom_text(data = subset(an_type_gg, Calendar_Year == "2010"),
+  #          aes(label = Commodity_Type, vjust = -2, size = 2),
+  #          show.legend = FALSE) +
+  facet_wrap(~Commodity_Type) +
+  labs(title = "Annual Emissions by Commodity Type",
+       x = "Year",
+       y = "C02 Emissions (kilotons)",
+       subtitle = "For the city of San Francisco, 1990-2019.") +
+  theme(panel.background = element_rect(fill = "gray97"),
+        panel.grid.major = element_line(color = "deeppink", size = .1),
+        panel.grid.minor = element_blank(),
+        plot.background = element_rect("gray94"))
+ggsave(here("figs", "emissionsSF.jpg"))
+```
+

@@ -1,0 +1,58 @@
+---
+title: "SPACE FORCE"
+author: "Shale"
+date: "8/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(janitor)
+library(lubridate)
+
+# data viz packages
+library(patchwork)
+library(ggrepel)
+library(gghighlight)
+library(ggExtra)
+library(paletteer)
+library(ggbeeswarm)
+library(gapminder)
+
+library(sf)
+```
+
+## sPacE GRapH
+
+```{r}
+space_data = read_csv(here("data_raw", "space_launches.csv"))
+```
+
+```{r}
+mission_data = space_data %>% 
+  group_by(launch_year, agency) %>% 
+  summarise(count = n())
+annual_data = space_data %>% 
+  group_by(launch_year) %>% 
+  summarise(count = n())
+type_data = space_data %>% 
+  group_by(launch_year, type) %>% 
+  summarise(count = n())
+
+ggplot() +
+  geom_line(data = mission_data, aes(x = launch_year, y = count, color = agency)) +
+  geom_col(data = annual_data, aes(x= launch_year, y= count), alpha = .5) +
+  geom_errorbar(data = type_data,
+                aes(x= launch_year,
+                    y= count),
+                ymin = 15,
+                ymax= 100, color = "red") +
+  theme(panel.grid = element_blank(),
+        panel.background = element_rect(fill = "pink"),
+        plot.background = element_rect(fill = "gold3")) +
+  labs(title = "MISSIONS", x = "YEAR", y = "TOTAL MISSIONS AND MISSIONS BY AGENCY BY YEAR")
+ggsave(here("figs", "badplot.jpg"))
+```
+
